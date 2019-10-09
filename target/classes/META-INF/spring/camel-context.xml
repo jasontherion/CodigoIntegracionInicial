@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Configures the Camel Context-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:cxf="http://camel.apache.org/schema/cxf"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="         http://www.springframework.org/schema/beans  http://www.springframework.org/schema/beans/spring-beans.xsd     http://camel.apache.org/schema/cxf http://camel.apache.org/schema/cxf/camel-cxf.xsd         http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+    <bean
+        class="org.apache.camel.spring.spi.BridgePropertyPlaceholderConfigurer" id="bridgePropertyPlaceholder">
+        <property name="location" value="classpath:valores.properties"/>
+    </bean>
+    <!-- ActiveMQ configuración de coneccion con pool -->
+    <bean class="org.apache.camel.component.jms.JmsConfiguration" id="jmsConfig">
+        <property name="concurrentConsumers" value="${activemq.consumerMax}"/>
+        <property name="maxConcurrentConsumers" value="${activemq.concurrencentMax}"/>
+        <property name="transacted" value="false"/>
+        <property name="connectionFactory">
+            <bean class="org.apache.activemq.pool.PooledConnectionFactory">
+                <property name="maxConnections" value="${activemq.conectionMax}"/>
+                <property name="connectionFactory">
+                    <bean class="org.apache.activemq.ActiveMQConnectionFactory">
+                        <property name="brokerURL" value="${activemq.url}"/>
+                        <property name="userName" value="${activemq.usuario}"/>
+                        <property name="password" value="${activemq.password}"/>
+                        <property name="trustAllPackages" value="true"/>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+    </bean>
+    <!--  Llamamos el componente ActiveMQComponent y le pasamos la referencia de conexión anterior  -->
+    <bean class="org.apache.activemq.camel.component.ActiveMQComponent"
+        depends-on="jmsConfig" id="activemq">
+        <property name="configuration" ref="jmsConfig"/>
+    </bean>
+    <cxf:cxfEndpoint address="http://localhost:4244/test/test"
+        id="cxfSoapServiceEndpoint3"
+        serviceClass="com.testing.fuse.bean.CalculadoraImpl"
+        serviceName="s:Calculadora2" xmlns:s="http://com.jasonTherion/"/>
+    <cxf:cxfEndpoint address="http://localhost:4245/test/consumirSoap"
+        endpointName="s:CalculatorSoap12" id="cxfSoapServiceEndpoint"
+        serviceClass="com.testing.fuse.bean.Calculator"
+        serviceName="s:Calculator"
+        wsdlURL="http://www.dneonline.com/calculator.asmx?wsdl" xmlns:s="http://tempuri.org/"/>
+    <bean class="org.apache.commons.dbcp.BasicDataSource" id="dataSource">
+        <property name="driverClassName" value="${driverName}"/>
+        <property name="url" value="${url}"/>
+        <property name="username" value="${usuario}"/>
+        <property name="password" value="${contrasena}"/>
+    </bean>
+    <bean class="com.testing.fuse.RouteBuilderTest" id="camelRoutes"/>
+    <camelContext id="_camelTestingGolaMundo" xmlns="http://camel.apache.org/schema/spring">
+        <routeBuilder ref="camelRoutes"/>
+    </camelContext>
+</beans>
